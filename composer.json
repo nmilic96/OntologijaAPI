@@ -1,0 +1,19 @@
+{
+    "name": "jakopec-php/p3restapi",
+    "description": "Primjer kreiranja REST API za potrebe kolegija Programiranje 3.",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Tomislav Jakopec",
+            "email": "tjakopec@ffos.hr"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Jakopec\\": "src/Jakopec"
+        }
+    },
+    "require": {
+        "mikecao/flight": "^1.3"
+    }
+}
