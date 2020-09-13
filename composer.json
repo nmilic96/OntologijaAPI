@@ -1,19 +1,25 @@
 {
-    "name": "jakopec-php/p3restapi",
-    "description": "Primjer kreiranja REST API za potrebe kolegija Programiranje 3.",
+    "name": "milic-php/projekt",
+    "description": "Kreiranje REST API za P3 projekt.",
     "type": "project",
     "authors": [
         {
-            "name": "Tomislav Jakopec",
-            "email": "tjakopec@ffos.hr"
+            "name": "Nikola Milić",
+            "email": "nmilic@ffos.hr"
         }
     ],
     "autoload": {
         "psr-4": {
-            "Jakopec\\": "src/Jakopec"
+            "Milic\\": "src/Milic"
         }
     },
     "require": {
-        "mikecao/flight": "^1.3"
+        "mikecao/flight": "^1.3",
+        "doctrine/orm": "*",
+        "easyrdf/easyrdf": "^1.0",
+        "ml/json-ld": "^1.2",
+        "semsol/arc2": "^2.5",
+        "symfony/serializer": "*",
+        "symfony/property-access": "*"
     }
 }

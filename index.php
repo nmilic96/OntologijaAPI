@@ -1,46 +1,91 @@
 <?php
-
 require 'vendor/autoload.php';
-use Jakopec\Osoba;
+require 'bootstrap.php';
 
-Flight::route('GET /osobe', function(){
-    
-    $osoba = new Osoba();
+use Milic\Ontologija;
+use Composer\Autoload\ClassLoader;
 
-    Flight::json($osoba->getOsobe());
+function parseUrl($string)
+{
+	$string = substr($string, strrpos($string, '/'));
+	preg_match("/[^\/]+$/", $string, $matches);
+	$string = $matches[0];
 
+	$url = parse_url($string);
+	if (isset($url["fragment"])) {
+		return $url["fragment"];
+	} else {
+		return $string;
+	}
+};
+
+Flight::route('GET /insert_into_table', function () {
+	$foaf = \EasyRdf\Graph::newAndLoad('https://oziz.ffos.hr/nastava20192020/nmilic_19/milic.rdf');
+
+	foreach ($foaf->resources() as $resource) {
+		$resourceName = parseUrl($resource);
+		if (strlen($resourceName) > 0) {
+
+			$resourceTypes = $resource->types();
+			$resourceTypes = implode($resourceTypes, ', ');
+
+			$resourceData = [];
+			if (isset($resourceTypes)) {
+				foreach ($resource->propertyUris() as $key) {
+					$validKey = '<' . $key . '>';
+					$values = $foaf->get($resource, $validKey);
+					$str = parseUrl($key) . ': ' . parseUrl($values);
+					echo($str) . '<br>';
+					array_push($resourceData, $str);
+				}
+			};
+
+			$resourceData = implode($resourceData, "\n");
+
+			$ontology = new Ontologija();
+			$ontology->setData(Flight::request()->data);
+			$ontology->setResourceName($resourceName);
+			$ontology->setResourceType($resourceTypes);
+			$ontology->setResourceData($resourceData);
+
+			$doctrineBootstrap = Flight::entityManager();
+			$em = $doctrineBootstrap->getEntityManager();
+			$em->persist($ontology);
+			$em->flush();
+		}
+	}
 });
 
-Flight::route('POST /osobe', function(){
-    
-    $osoba = new Osoba();
-    
-    $poruka=new stdClass();
-    $poruka->tekst=$osoba->dodaj(Flight::request()->data);
-    $poruka->greska=false;
-    $odgovor=new stdClass();
-    $odgovor->poruka=$poruka;
-    
-    Flight::json($odgovor); 
+function getAllData() {
+	$doctrineBootstrap = Flight::entityManager();
+	$em = $doctrineBootstrap->getEntityManager();
+	$repo = $em->getRepository('Milic\Ontologija');
+	$items = $repo->findAll();
+	echo $doctrineBootstrap->getJson($items);
+}
 
-    header("HTTP/1.1 201 Created"); //https://gist.github.com/phoenixg/5326222
-
+Flight::route('GET /', function () {
+	getAllData();
 });
 
-Flight::route('/', function(){
-    $poruka=new stdClass();
-    $poruka->tekst="Nepotpuni zahtjev";
-    $poruka->kod=1;
-    $poruka->greska=true;
-    $poruka->detalji="https://upute.app.hr/blog/api/v1/greske/7";
-
-    $odgovor=new stdClass();
-    $odgovor->poruka=$poruka;
-
-    Flight::json($odgovor);
-
+Flight::route('GET /search', function () {
+	getAllData();
 });
 
+Flight::route('GET /search/@term', function ($val) {
+	$doctrineBootstrap = Flight::entityManager();
+	$em = $doctrineBootstrap->getEntityManager();
+	$repo = $em->getRepository('Milic\Ontologija');
+	$items = $repo->createQueryBuilder('r')
+		->where('r.resourceName LIKE :term OR r.resourceData LIKE :term')
+		->setParameter('term', '%' . $val . '%')
+		->getQuery()
+		->getResult();
+	echo $doctrineBootstrap->getJson($items);
+});
 
-
+$cl = new ClassLoader('Milic', __DIR__, '/src');
+$cl->register();
+require_once 'bootstrap.php';
+Flight::register('entityManager', 'DoctrineBootstrap');
 Flight::start();
